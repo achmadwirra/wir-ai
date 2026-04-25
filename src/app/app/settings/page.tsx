@@ -80,6 +80,11 @@ export default function SettingsPage() {
                 API key configured
               </p>
             )}
+            <div className="mt-4 rounded-lg border border-green-500/20 bg-green-500/5 px-4 py-3">
+              <p className="text-xs text-green-300/80">
+                🔒 Your API key is stored locally in your browser and sent directly to OpenRouter. It never passes through our servers.
+              </p>
+            </div>
           </GlassCard>
 
           {/* Default Model */}

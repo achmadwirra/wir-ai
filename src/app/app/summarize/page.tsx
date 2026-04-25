@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Loader2, Sparkles } from 'lucide-react';
 import { getApiKey, getDefaultModel } from '@/lib/settings';
+import { chatCompletionJSON } from '@/lib/openrouter';
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
 import ModelSelector from '@/components/ui/ModelSelector';
 import ApiKeyWarning from '@/components/ui/ApiKeyWarning';
@@ -41,15 +42,21 @@ export default function SummarizePage() {
     setResult('');
 
     try {
-      const response = await fetch('/api/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, format, model, apiKey }),
-      });
+      const formatInstructions: Record<string, string> = {
+        bullets: 'Summarize the following text as a concise bullet-point list. Use markdown bullet points.',
+        paragraph: 'Summarize the following text in a concise paragraph.',
+        takeaways: 'Extract the key takeaways from the following text. Format as numbered key points with brief explanations.',
+      };
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Summarization failed');
-      setResult(data.summary);
+      const systemPrompt = formatInstructions[format] || formatInstructions.bullets;
+
+      const data = await chatCompletionJSON(apiKey, model, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text },
+      ]);
+
+      const summary = data.choices?.[0]?.message?.content || '';
+      setResult(summary);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

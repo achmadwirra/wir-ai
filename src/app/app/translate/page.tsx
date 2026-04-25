@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Languages, Loader2, ArrowRightLeft, Copy, Check } from 'lucide-react';
 import { getApiKey, getDefaultModel } from '@/lib/settings';
+import { chatCompletionJSON } from '@/lib/openrouter';
 import { LANGUAGES } from '@/lib/constants';
 import ModelSelector from '@/components/ui/ModelSelector';
 import ApiKeyWarning from '@/components/ui/ApiKeyWarning';
@@ -49,21 +50,16 @@ export default function TranslatePage() {
     const targetLabel = LANGUAGES.find((l) => l.code === targetLang)?.name || targetLang;
 
     try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          sourceLang: sourceLabel,
-          targetLang: targetLabel,
-          model,
-          apiKey,
-        }),
-      });
+      const systemPrompt = `You are a professional translator. Translate the following text from ${sourceLabel} to ${targetLabel}. 
+Return ONLY the translated text, nothing else. Preserve the original formatting, tone, and meaning as closely as possible.`;
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Translation failed');
-      setResult(data.translatedText);
+      const data = await chatCompletionJSON(apiKey, model, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text },
+      ]);
+
+      const translatedText = data.choices?.[0]?.message?.content || '';
+      setResult(translatedText);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

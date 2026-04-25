@@ -15,6 +15,7 @@ import {
   Sparkles,
   PanelLeftClose,
   PanelLeft,
+  Shield,
 } from 'lucide-react';
 
 const navItems = [
@@ -108,6 +109,25 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Security badge */}
+        <div className={`px-3 py-2 ${collapsed ? 'px-1' : ''}`}>
+          <div className={`flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 px-2 py-1.5 ${collapsed ? 'justify-center px-1' : ''}`}>
+            <Shield className="h-3.5 w-3.5 shrink-0 text-green-400" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="overflow-hidden whitespace-nowrap text-[10px] leading-tight text-green-400/80"
+                >
+                  Client-side only · Keys never leave your browser
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
         {/* Collapse toggle */}
         <div className="border-t border-white/10 p-2">

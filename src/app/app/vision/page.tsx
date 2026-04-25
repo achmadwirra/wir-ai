@@ -5,6 +5,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, Upload, Link as LinkIcon, X, Loader2, ImageIcon } from 'lucide-react';
 import { getApiKey, getDefaultModel } from '@/lib/settings';
+import { chatCompletionJSON } from '@/lib/openrouter';
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
 import ModelSelector from '@/components/ui/ModelSelector';
 import ApiKeyWarning from '@/components/ui/ApiKeyWarning';
@@ -77,21 +78,26 @@ export default function VisionPage() {
     setResult('');
 
     try {
-      const response = await fetch('/api/vision', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: imageBase64 || undefined,
-          imageUrl: !imageBase64 ? imagePreview : undefined,
-          prompt: prompt || undefined,
-          model,
-          apiKey,
-        }),
-      });
+      const imageContent = imageBase64
+        ? { type: 'image_url' as const, image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
+        : { type: 'image_url' as const, image_url: { url: imagePreview! } };
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Analysis failed');
-      setResult(data.description);
+      const messages = [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: prompt || 'Analyze this image in detail. Describe what you see, including objects, colors, composition, text, and any notable features.',
+            },
+            imageContent,
+          ],
+        },
+      ];
+
+      const data = await chatCompletionJSON(apiKey, model, messages);
+      const content = data.choices?.[0]?.message?.content || 'No analysis available.';
+      setResult(content);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

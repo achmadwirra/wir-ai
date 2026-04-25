@@ -17,6 +17,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { Conversation, Message } from '@/types';
 import { getApiKey, getDefaultModel } from '@/lib/settings';
+import { streamChat } from '@/lib/openrouter';
 import { AI_MODELS } from '@/lib/constants';
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
 import ModelSelector from '@/components/ui/ModelSelector';
@@ -159,69 +160,23 @@ export default function ChatPage() {
         content: m.content,
       }));
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: allMessages,
-          model,
-          apiKey,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get response');
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) throw new Error('No response stream');
-
       let fullContent = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-          const data = trimmed.slice(6);
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.error) throw new Error(parsed.error);
-            if (parsed.content) {
-              fullContent += parsed.content;
-              setConversations((prev) =>
-                prev.map((c) => {
-                  if (c.id !== convId) return c;
-                  return {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === assistantMessage.id
-                        ? { ...m, content: fullContent }
-                        : m
-                    ),
-                  };
-                })
-              );
-            }
-          } catch (e) {
-            if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
-              // Only throw real errors, not partial JSON
-              if (e.message !== 'Unexpected end of JSON input' && !e.message.includes('JSON')) {
-                throw e;
-              }
-            }
-          }
-        }
+      for await (const chunk of streamChat(apiKey, model, allMessages)) {
+        fullContent += chunk;
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== convId) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === assistantMessage.id
+                  ? { ...m, content: fullContent }
+                  : m
+              ),
+            };
+          })
+        );
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Code2, Loader2, Copy, Check, Wand2 } from 'lucide-react';
 import { getApiKey, getDefaultModel } from '@/lib/settings';
+import { chatCompletionJSON } from '@/lib/openrouter';
 import { CODE_LANGUAGES } from '@/lib/constants';
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
 import ModelSelector from '@/components/ui/ModelSelector';
@@ -44,15 +45,18 @@ export default function CodePage() {
     setShowExplanation(false);
 
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, language, model, apiKey }),
-      });
+      const systemPrompt = `You are an expert programmer. Generate clean, well-commented, production-quality code.
+When the user describes what they want, generate the code in ${language}.
+Return ONLY the code wrapped in a single markdown code block with the appropriate language tag.
+Do not include any explanation outside the code block unless specifically asked.`;
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Generation failed');
-      setResult(data.code);
+      const data = await chatCompletionJSON(apiKey, model, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt },
+      ]);
+
+      const content = data.choices?.[0]?.message?.content || '';
+      setResult(content);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -69,20 +73,19 @@ export default function CodePage() {
     setLoadingExplanation(true);
 
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `Explain the following code in detail. Break down what each part does:\n\n${result}`,
-          language: 'text',
-          model,
-          apiKey,
-        }),
-      });
+      const data = await chatCompletionJSON(apiKey, model, [
+        {
+          role: 'system',
+          content: 'You are an expert programmer. Explain code clearly and thoroughly.',
+        },
+        {
+          role: 'user',
+          content: `Explain the following code in detail. Break down what each part does:\n\n${result}`,
+        },
+      ]);
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      setExplanation(data.code);
+      const content = data.choices?.[0]?.message?.content || '';
+      setExplanation(content);
     } catch (err) {
       setExplanation(`Error: ${err instanceof Error ? err.message : 'Failed to explain'}`);
     } finally {
