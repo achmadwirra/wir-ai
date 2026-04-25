@@ -28,6 +28,12 @@ export const AI_MODELS: AIModel[] = [
     isFree: true,
   },
   {
+    id: 'minimax/minimax-m2.5:free',
+    name: 'MiniMax M2.5',
+    provider: 'MiniMax',
+    isFree: true,
+  },
+  {
     id: 'openai/gpt-4o',
     name: 'GPT-4o',
     provider: 'OpenAI',
