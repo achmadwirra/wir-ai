@@ -4,9 +4,27 @@ import { AIModel } from '@/types';
 
 export const AI_MODELS: AIModel[] = [
   {
-    id: 'google/gemini-2.0-flash-exp:free',
-    name: 'Gemini 2.0 Flash',
+    id: 'google/gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
     provider: 'Google',
+    isFree: true,
+  },
+  {
+    id: 'deepseek/deepseek-chat-v3-0324:free',
+    name: 'DeepSeek V3',
+    provider: 'DeepSeek',
+    isFree: true,
+  },
+  {
+    id: 'meta-llama/llama-4-maverick:free',
+    name: 'Llama 4 Maverick',
+    provider: 'Meta',
+    isFree: true,
+  },
+  {
+    id: 'qwen/qwen3-235b-a22b:free',
+    name: 'Qwen 3 235B',
+    provider: 'Qwen',
     isFree: true,
   },
   {
@@ -19,19 +37,9 @@ export const AI_MODELS: AIModel[] = [
     name: 'Claude 3.5 Sonnet',
     provider: 'Anthropic',
   },
-  {
-    id: 'meta-llama/llama-3.3-70b-instruct',
-    name: 'Llama 3.3 70B',
-    provider: 'Meta',
-  },
-  {
-    id: 'deepseek/deepseek-chat-v3',
-    name: 'DeepSeek V3',
-    provider: 'DeepSeek',
-  },
 ];
 
-export const DEFAULT_MODEL = 'google/gemini-2.0-flash-exp:free';
+export const DEFAULT_MODEL = 'google/gemini-2.5-flash';
 
 export const LANGUAGES = [
   { code: 'en', name: 'English' },
